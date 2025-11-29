@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Studentský web GJSZ</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#3b82f6;--muted:#9aa4b2;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{margin:0;background:linear-gradient(180deg,#08101a 0%, #07121b 100%);color:#e6eef8;min-height:100vh}
+    header{display:flex;gap:1rem;align-items:center;padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.03)}
+    h1{font-size:18px;margin:0}
+    nav{margin-left:auto;display:flex;gap:8px}
+    button.tab{background:var(--glass);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+    button.tab.active{background:linear-gradient(90deg,rgba(59,130,246,0.12),rgba(59,130,246,0.06));color:var(--accent);box-shadow:0 6px 20px rgba(59,130,246,0.06)}
+    main{padding:22px;display:grid;grid-template-columns:1fr 360px;gap:22px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
+    .news-list{display:flex;flex-direction:column;gap:12px}
+    .news-item{padding:12px;border-radius:10px;background:rgba(255,255,255,0.01)}
+    .side h3{margin-top:0}
+    .messages{display:flex;flex-direction:column;gap:10px}
+    .msg{padding:10px;border-radius:8px;background:#071827;border:1px solid rgba(255,255,255,0.02)}
+    .controls{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    input[type=text],textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:13px}
+    footer{padding:16px;text-align:center;color:var(--muted)}
+    .ok{color:#7ee787}
+    .err{color:#ff8b8b}
+    .file-actions{display:flex;gap:10px}
+    .question{cursor:pointer;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
+    @media(max-width:900px){main{grid-template-columns:1fr;}.side{order:-1}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Studentský web GJSZ</h1>
+    <nav>
+      <button class="tab active" data-tab="novinky">Novinky</button>
+      <button class="tab" data-tab="zpravy">Zprávy</button>
+      <button class="tab" data-tab="otazky">Otázky</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card content" id="novinky-panel">
+      <h2>Novinky</h2>
+      <div class="news-list" id="novinky">
+        <!-- Napiš sem svoje novinky přímo do HTML: kopíruj <div class="news-item">... -->
+        <div class="news-item">
+          <strong>Zápas v hokeji - TGM vs. Lesňák</strong>
+          <div class="muted small">29. 11. 2025</div>
+          <p>V 17:45 v Trinity Bank Aréna Luďka Čajsky.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h3>Zprávy (Messages.txt)</h3>
+        <p class="muted small">Načti nebo otevři soubor <code>Messages.txt</code> ze stejné složky. Pokud běžíš stránku přes webserver, stránka ho automaticky načte. Jinak použi tlačítko "Otevřít Messages.txt" a dovol prohlížeči upravit soubor (File System Access API).</p>
+
+        <div class="file-actions">
+          <button id="tryFetch">Načíst Messages.txt (fetch)</button>
+          <button id="openFile">Otevřít Messages.txt (lokálně)</button>
+        </div>
+
+        <div style="margin-top:10px">
+          <div class="controls">
+            <input type="text" id="newMessage" placeholder="Napiš zprávu (max 20 znaků)" maxlength="40">
+            <button id="sendMsg">Odeslat</button>
+          </div>
+          <div class="controls">
+            <input type="text" id="newComment" placeholder="Napiš komentář (max 25 znaků)" maxlength="50">
+            <button id="sendCmt">Komentovat</button>
+          </div>
+          <div id="status" class="muted small"></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.02);margin:10px 0">
+        <div id="messagesArea" class="messages">
+          <!-- zprávy se budou načítat tady -->
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>Rychlé info</h3>
+        <p class="muted small">Pravidla klient-side:
+        <ul class="muted small">
+          <li>Zpráva: max 20 znaků.</li>
+          <li>Komentář: max 25 znaků.</li>
+          <li>Max 2 zprávy / týden (ukládá se v prohlížeči).</li>
+          <li>Max 3 komentáře / týden (ukládá se v prohlížeči).</li>
+        </ul>
+        </p>
+      </div>
+    </aside>
+
+    <section class="card" id="zpravy-panel" style="display:none">
+      <h2>Zprávy (obsah z Messages.txt)</h2>
+      <div id="zpravyList" class="messages"></div>
+    </section>
+
+    <section class="card" id="otazky-panel" style="display:none">
+      <h2>Otázky</h2>
+      <div class="question" data-ans="Začáteční cifra je patro (např. 524 = 5. patro, 24. učebna)">Jak funguje číslování učeben</div>
+      <div class="question" data-ans="Netuším.">Proč pořád nefungují Bakaláři</div>
+      <div class="question" data-ans="Španělština, Francouzština a Němčina.">Jaké jazyky jsou na výběr jako 2. jazyk který se můžu učit</div>
+
+      <div id="answer" style="margin-top:12px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);display:none"></div>
+    </section>
+  </main>
+
+  <footer>
+    <small class="muted">Studentský web GJSZ — jednoduchá lokální verze. Uprav Messages.txt podle potřeby.</small>
+  </footer>
+
+  <script>
+    // --- taby ---
+    document.querySelectorAll('button.tab').forEach(btn=>btn.addEventListener('click',()=>{
+      document.querySelectorAll('button.tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('novinky-panel').style.display = btn.dataset.tab==='novinky' ? '' : 'none';
+      document.getElementById('zpravy-panel').style.display = btn.dataset.tab==='zpravy' ? '' : 'none';
+      document.getElementById('otazky-panel').style.display = btn.dataset.tab==='otazky' ? '' : 'none';
+    }));
+
+    // --- otazky ---
+    document.querySelectorAll('.question').forEach(q=>q.addEventListener('click',()=>{
+      const a = document.getElementById('answer');
+      a.textContent = q.dataset.ans; a.style.display='block';
+    }));
+
+    // --- zpravy / Messages.txt handling ---
+    const messagesArea = document.getElementById('messagesArea');
+    const zpravyList = document.getElementById('zpravyList');
+    const status = document.getElementById('status');
+    let currentFileHandle = null; // for File System Access
+    let messages = []; // {type:'MSG'|'CMT',text,when}
+
+    function renderMessages(){
+      messagesArea.innerHTML = '';
+      zpravyList.innerHTML = '';
+      messages.forEach((m,i)=>{
+        const el = document.createElement('div'); el.className='msg';
+        el.innerHTML = `<div><strong>${m.type==='MSG'? 'Zpráva':'Komentář'}</strong> <span class="muted small">${new Date(m.when).toLocaleString()}</span></div><div>${escapeHtml(m.text)}</div>`;
+        messagesArea.appendChild(el);
+        const el2 = el.cloneNode(true);
+        zpravyList.appendChild(el2);
+      });
+    }
+
+    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    async function loadViaFetch(){
+      try{
+        const res = await fetch('Messages.txt');
+        if(!res.ok) throw new Error('fetch failed');
+        const txt = await res.text(); parseMessagesTxt(txt); status.textContent='Načteno přes fetch.'; renderMessages();
+      }catch(e){ status.textContent = 'Fetch selhal — stránka pravděpodobně běží z file:// nebo Messages.txt není na serveru.'; }
+    }
+
+    function parseMessagesTxt(txt){
+      messages = [];
+      const lines = txt.split(/\r?\n/);
+      for(const l of lines){
+        if(!l.trim()) continue;
+        // simple format: TYPE|timestamp|text
+        const parts = l.split('|');
+        if(parts.length>=3 && (parts[0]==='MSG' || parts[0]==='CMT')){
+          messages.push({type:parts[0],when:parseInt(parts[1])||Date.now(),text:parts.slice(2).join('|')});
+        } else {
+          // legacy: plain line -> treat as message
+          messages.push({type:'MSG',when:Date.now(),text:l});
+        }
+      }
+      messages.sort((a,b)=>b.when-a.when);
+    }
+
+    // Try fast automatic fetch (works when hosting via HTTP server and Messages.txt present)
+    document.getElementById('tryFetch').addEventListener('click',loadViaFetch);
+    // also attempt on load silently
+    loadViaFetch();
+
+    // File System Access API (for local file editing). If not available, user can still view via fetch when hosted.
+    async function openMessagesFile(){
+      status.textContent='Počkej...';
+      try{
+        // @ts-ignore
+        const [handle] = await window.showOpenFilePicker({types:[{description:'Text files',accept:{'text/plain':['.txt']}}],excludeAcceptAllOption:false,multiple:false});
+        currentFileHandle = handle;
+        const file = await handle.getFile();
+        const txt = await file.text();
+        parseMessagesTxt(txt);
+        renderMessages();
+        status.textContent='Messages.txt otevřen — úpravy budou ukládány do tohoto souboru.';
+      }catch(e){ status.textContent='Otevření souboru zrušeno nebo nepodporováno.' }
+    }
+    document.getElementById('openFile').addEventListener('click',openMessagesFile);
+
+    async function writeMessagesFile(){
+      if(!currentFileHandle){ status.textContent='Neotevřel jsi Messages.txt přes tlačítko. Nemohu uložit.'; return; }
+      const content = messages.map(m=>`${m.type}|${m.when}|${m.text}`).join('\n');
+      const writable = await currentFileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      status.textContent='Uloženo do Messages.txt.';
+    }
+
+    // --- rate limits stored per-browser ---
+    function weekKey(){
+      // key for current ISO week-year
+      const d=new Date();
+      // compute week number
+      const target = new Date(d.valueOf());
+      const dayNr = (d.getDay() + 6) % 7;
+      target.setDate(target.getDate() - dayNr + 3);
+      const firstThu = new Date(target.getFullYear(),0,4);
+      const weekNo = 1 + Math.round(((target - firstThu) / 86400000 - 3 + ((firstThu.getDay()+6)%7))/7);
+      return `${d.getFullYear()}-W${weekNo}`;
+    }
+    function getQuota(){
+      const k = 'gjsz_quota_' + weekKey();
+      const raw = localStorage.getItem(k);
+      if(!raw) return {msgs:0,cmts:0};
+      try{return JSON.parse(raw);}catch(e){return {msgs:0,cmts:0}}
+    }
+    function incQuota(isMsg){
+      const k = 'gjsz_quota_' + weekKey();
+      const q = getQuota(); if(isMsg) q.msgs++; else q.cmts++; localStorage.setItem(k,JSON.stringify(q));
+    }
+
+    // --- sending ---
+    document.getElementById('sendMsg').addEventListener('click',()=>submitEntry(true));
+    document.getElementById('sendCmt').addEventListener('click',()=>submitEntry(false));
+
+    function submitEntry(isMsg){
+      const input = isMsg ? document.getElementById('newMessage') : document.getElementById('newComment');
+      const text = (input.value||'').trim();
+      if(!text){ status.textContent='Napiš text.'; return; }
+      if(isMsg && text.length>20){ status.textContent='Zpráva nesmí přesáhnout 20 znaků.'; return; }
+      if(!isMsg && text.length>25){ status.textContent='Komentář nesmí přesáhnout 25 znaků.'; return; }
+      const q = getQuota();
+      if(isMsg && q.msgs>=2){ status.textContent='Dost limit zpráv pro tento týden (2).'; return; }
+      if(!isMsg && q.cmts>=3){ status.textContent='Dost limit komentářů pro tento týden (3).'; return; }
+      // push
+      messages.unshift({type:isMsg?'MSG':'CMT',when:Date.now(),text:text});
+      incQuota(isMsg);
+      renderMessages();
+      input.value='';
+      status.textContent='Přidáno lokálně.';
+      // try to save automatically if file opened
+      if(currentFileHandle) writeMessagesFile();
+    }
+
+    // basic keyboard submit
+    document.getElementById('newMessage').addEventListener('keydown',e=>{ if(e.key==='Enter') submitEntry(true); });
+    document.getElementById('newComment').addEventListener('keydown',e=>{ if(e.key==='Enter') submitEntry(false); });
+
+    // helper: if Messages.txt exists on the same server, allow direct fetch-based posting via fetch+PUT is not standard; we cannot write to server from client.
+    // So the safest options: a) host the site on a server and let server-side script update Messages.txt b) use local File System Access API which we implemented.
+
+    // show initial empty state
+    renderMessages();
+  </script>
+</body>
+</html>
